@@ -46,7 +46,8 @@ class WebController extends RootController
      *
      * @return View
      */
-    public function index(){
+    public function index()
+    {
         if (Auth::check()) {
             return Redirect::to('/home');
         } else {
@@ -81,7 +82,7 @@ class WebController extends RootController
      *
      * @return Response
      */
-    public function tree_roots()
+    public function treeRoots()
     {
         $roots = Sname::getRoots(); // $roots is a Collection
         $treeRoots = $roots->map([$this, 'transformToTreeNode']);
@@ -97,7 +98,7 @@ class WebController extends RootController
      *
      * @return Response
      */
-    public function load_and_rebuild()
+    public function loadAndRebuild()
     {
         // Check if we are building a tree from scratch
         $clear = Request::get('clear');
@@ -116,7 +117,7 @@ class WebController extends RootController
 
         // Save the uploaded file (temporarily)
         if (!$this->moveUploadedFile()) {
-            return back()->withInput('file_error','Something went wrong! Please try again in a few minutes.');
+            return back()->withInput('file_error', 'Something went wrong! Please try again in a few minutes.');
         }
 
         DB::beginTransaction();
@@ -133,7 +134,7 @@ class WebController extends RootController
                 // check if it is going to be imported from this CSV).
                 $rules = config('validation.rebuild_sname_create');
                 $validator = Validator::make($node, $rules);
-                if ($validator->fails()){
+                if ($validator->fails()) {
                     $errors = $validator->errors()->getMessages();
                     foreach ($errors as $key => $value) {
                         $this->batchErrors[] = array(
@@ -166,7 +167,7 @@ class WebController extends RootController
                     // Check that the new node's rank is compatible with its
                     // position in the tree
                     $parent_node = $this->batchNodes[$node['parent_id']];
-                    $position_status = $this->validate_node_rank($node, $parent_node);
+                    $position_status = $this->validateNodeRank($node, $parent_node);
                     if (!$position_status['valid']) {
                         $this->batchErrors[] = array(
                             'index'     =>  $node['id'],
@@ -174,7 +175,7 @@ class WebController extends RootController
                             'message'   =>  $position_status['error_message']
                         );
                         DB::rollBack();
-                        $this->log_event('Node validation failed!'.  json_encode($this->batchErrors), 'info');
+                        $this->logEvent('Node validation failed!'.  json_encode($this->batchErrors), 'info');
                         return back()->with('importation_errors', $this->batchErrors);
                     }
                 } else {
@@ -184,7 +185,6 @@ class WebController extends RootController
                 // Save the node
                 $this->add_node($node);
             }
-
         } catch (Exception $ex) {
             $this->batchErrors[] = array(
                 'index'     =>  $node['id'],
@@ -207,23 +207,26 @@ class WebController extends RootController
      *
      * @return JSON
      */
-    public function node_children()
+    public function nodeChildren()
     {
         $node_id = Request::get('node');
 
-        $key = 'node_children_'.$node_id;
-        if (Cache::has($key)) {
-            $jsonTree = Cache::get($key);
-        } else {
-            $parent = Sname::find($node_id);
-            $children = $parent->getAcceptedChildren();
-            $treeChildren = $children->map([$this,'transformToTreeNode']);
-            $jsonTree = json_encode($treeChildren);
-
-            Cache::put($key, $jsonTree, $this->caching_period);
+        if (!config('cache.disable_caching')) {
+            $key = 'node_children_'.$node_id;
+            if (Cache::has($key)) {
+                return Cache::get($key);
+            }
         }
 
-        return $jsonTree;
+        $parent = Sname::find($node_id);
+        $children = $parent->getAcceptedChildren();
+        $jsonTree = $children->map([$this,'transformToTreeNode']);
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($jsonTree), $this->caching_period);
+        }
+
+        return response()->json($jsonTree);
     }
 
     /**
@@ -235,23 +238,26 @@ class WebController extends RootController
      *
      * @return JSON
      */
-    public function all_node_children()
+    public function allNodeChildren()
     {
         $node_id = Request::get('node');
 
-        $key = 'node_children_'.$node_id;
-        if (Cache::has($key)) {
-            $arrayTree = json_decode(Cache::get($key));
-        } else {
-            $parent = Sname::find($node_id);
-            $children = $parent->getChildren();
-            $treeChildren = $children->map([$this,'transformToTreeNodeWithAccepted']);
-            $jsonTree = json_encode($treeChildren);
-
-            Cache::put($key,$jsonTree,$this->caching_period);
+        if (!config('cache.disable_caching')) {
+            $key = 'node_children_'.$node_id;
+            if (Cache::has($key)) {
+                return response()->json(json_decode(Cache::get($key)));
+            }
         }
 
-        return response()->json($treeChildren);
+        $parent = Sname::find($node_id);
+        $children = $parent->getChildren();
+        $jsonTree = $children->map([$this,'transformToTreeNodeWithAccepted']);
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($jsonTree), $this->caching_period);
+        }
+
+        return response()->json($jsonTree);
     }
 
     /**
@@ -261,7 +267,7 @@ class WebController extends RootController
      *
      * @return Response
      */
-    public function load_depth_first()
+    public function loadDepthFirst()
     {
         // Check if we are building a tree from scratch
         $clear = Request::get('clear');
@@ -273,7 +279,7 @@ class WebController extends RootController
         // Check that a valid file has been sent
         $rules = config('validation.add_nodes_from_file');
         $form = Request::all();
-        $validator = Validator::make($form ,$rules);
+        $validator = Validator::make($form, $rules);
         if ($validator->fails()) {
             return back()->withErrors($validator);
         }
@@ -308,7 +314,6 @@ class WebController extends RootController
                     return back()->with('importation_errors', $this->batchErrors);
                 }
             }
-
         } catch (Exception $ex) {
             $this->batchErrors[] = array(
                 'index'     =>  $lineArray['id'],
@@ -405,7 +410,7 @@ class WebController extends RootController
         }
 
         // Add the node to the tree
-        $result = $this->add_node($node);
+        $result = $this->addNode($node);
 
         if (!$result['succeed']) {
             $this->batchErrors[] = array(
@@ -442,10 +447,9 @@ class WebController extends RootController
         // is compatible with its position in the tree
         if (!empty($node['parent_id'])) {
             $parent_node = $this->batchNodes[$node['parent_id']];
-            $position_status = $this->validate_node_rank($node, $parent_node);
+            $position_status = $this->validateNodeRank($node, $parent_node);
             return $position_status['valid'];
         }
         return true;
     }
-
 }

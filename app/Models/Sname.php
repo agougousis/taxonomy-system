@@ -155,7 +155,7 @@ class Sname extends Model
      */
     public function getRandomDescendant()
     {
-        return Sname::where('path','like',$this->path.'/'.$this->id.'%')
+        return Sname::where('path', 'like', $this->path.'/'.$this->id.'%')
                 ->orderByRaw("RAND()")
                 ->limit(1)
                 ->first();
@@ -169,9 +169,9 @@ class Sname extends Model
      * @param string $old_anc_path
      * @param string $new_anc_path
      */
-    public static function change_paths($old_anc_path, $new_anc_path)
+    public static function changePaths($old_anc_path, $new_anc_path)
     {
-        $nodes = Sname::where('path','like', $old_anc_path.'%')->get();
+        $nodes = Sname::where('path', 'like', $old_anc_path.'%')->get();
         foreach ($nodes as $node) {
             $pos = strpos($node->path, $old_anc_path);
             if (!($pos === false)) {

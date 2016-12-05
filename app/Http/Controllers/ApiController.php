@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use DB;
+use Cache;
 use App\Models\Sname;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Input;
@@ -13,6 +15,11 @@ use Illuminate\Support\Facades\Input;
  */
 class ApiController extends RootController
 {
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
     /**
      * Retrieves the complete lineage of a node starting from the root.
      *
@@ -42,13 +49,24 @@ class ApiController extends RootController
      */
     public function read($nid)
     {
+        if (!config('cache.disable_caching')) {
+            $key = 'read_node_'.$nid;
+            if (Cache::has($key)) {
+                return Cache::get($key);
+            }
+        }
+
         // Check if a node with ID equal to $nid exists
         $node = Sname::find($nid);
         if (empty($node)) {
             return response()->json([
                 'message'=>'Invalid name ID',
                 'errors' => array()
-                ])->setStatusCode(400, '');
+            ])->setStatusCode(400, '');
+        }
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($node), $this->caching_period);
         }
 
         // Send back the node info
@@ -64,26 +82,66 @@ class ApiController extends RootController
     {
         $mode = Input::get('mode') ?: "search";
 
-        switch($mode){
+        switch ($mode) {
             case 'roots':
-                // ---- Return root nodes -----
-                $roots = Sname::getRoots(); // $roots is a Collection
-                $treeRoots = $roots->map([$this, 'transformRoot']);
-                return response()->json(['data' => $treeRoots]);
-                break;
+                $roots = $this->listRootNodes();
+                return response()->json(['data' => $roots]);
             case 'search':
-                $searchResults = $this->searchWithPagination();
-                return response()->json(array(
-                    'data'      => $searchResults['name_list'],
-                    'hasMore'   => $searchResults['has_more']
-                    ));
-                break;
+                $page = Input::get('page')?: 1;
+                $pageInfoArray = $this->listPage($page);
+                return response()->json($pageInfoArray);
             default:
                 return response()->json(['message' => 'Invalid search mode', 'errors' => array()])
                                      ->setStatusCode(400, '');
-                break;
-
         }
+    }
+
+    /**
+     * Returns a list of root names from DB or cache
+     *
+     * @return array
+     */
+    protected function listRootNodes()
+    {
+        $key = 'list_roots';
+        if (!config('cache.disable_caching') && Cache::has($key)) {
+            return json_decode(Cache::get($key));
+        }
+
+        $roots = Sname::getRoots(); // $roots is a Collection
+        $treeRoots = $roots->map([$this, 'transformRoot']);
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($treeRoots), $this->caching_period);
+        }
+
+        return $treeRoots;
+    }
+
+    /**
+     * Returns a specific result page from names list
+     *
+     * @param int $page
+     * @return array
+     */
+    protected function listPage($page)
+    {
+        $key = 'search_page_'.$page;
+        if (!config('cache.disable_caching') && Cache::has($key)) {
+            return json_decode(Cache::get($key));
+        }
+
+        $searchResults = $this->searchWithPagination($page);
+        $pageInfoArray = [
+            'data'      => $searchResults['name_list'],
+            'hasMore'   => $searchResults['has_more']
+        ];
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($pageInfoArray), $this->caching_period);
+        }
+
+        return $pageInfoArray;
     }
 
     /**
@@ -91,11 +149,10 @@ class ApiController extends RootController
      *
      * @return array
      */
-    protected function searchWithPagination()
+    protected function searchWithPagination($page)
     {
         $rpp_setting = Setting::where('name', 'rpp')->first();
         $rpp = $rpp_setting->value;
-        $page = Input::get('page')?: 1;
         $take = $rpp+1; // We need one more to figure out if there are more results
         $skip = ($page-1)*$rpp;
 
@@ -148,6 +205,13 @@ class ApiController extends RootController
      */
     public function synonyms($nid)
     {
+        if (!config('cache.disable_caching')) {
+            $key = 'synonyms_for_'.$nid;
+            if (Cache::has($key)) {
+                return response()->json(['data' => json_decode(Cache::get($key))]);
+            }
+        }
+
         // Check if a node with ID equal to $nid exists
         $node = Sname::find($nid);
         if (empty($node)) {
@@ -162,6 +226,11 @@ class ApiController extends RootController
         }
 
         $synonyms = Sname::where('accepted', 0)->where('related_to_accepted', $nid)->get();
+
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($synonyms), $this->caching_period);
+        }
+
         return response()->json(['data' => $synonyms]);
     }
 
@@ -176,6 +245,13 @@ class ApiController extends RootController
      */
     public function children($nid)
     {
+        if (!config('cache.disable_caching')) {
+            $key = 'children_of_'.$nid;
+            if (Cache::has($key)) {
+                return response()->json(['data' => json_decode(Cache::get($key))]);
+            }
+        }
+
         // Check if a node with ID equal to $nid exists
         $parent = Sname::find($nid);
         if (empty($parent)) {
@@ -184,6 +260,10 @@ class ApiController extends RootController
         }
 
         $children = $parent->getAcceptedChildren();
+        if (!config('cache.disable_caching')) {
+            Cache::put($key, json_encode($children), $this->caching_period);
+        }
+
         return response()->json(['data' => $children]);
     }
 

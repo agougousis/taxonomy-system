@@ -15,15 +15,14 @@ class AdminAccess
      * @param  string|null  $guard
      * @return mixed
      */
-    public function handle($request, Closure $next, $guard = null) {
-
-        if(!Auth::check()){
+    public function handle($request, Closure $next, $guard = null)
+    {
+        if (!Auth::check()) {
             return Redirect::to('/');
         }
-        if(!Auth::user()->is_admin){
+        if (!Auth::user()->is_admin) {
             return response('Unauthorized.', 401);
         }
         return $next($request);
-
     }
 }

@@ -157,7 +157,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         'Maatwebsite\Excel\ExcelServiceProvider',
         Collective\Html\HtmlServiceProvider::class,
-
+        'SocialEngine\SnifferRules\ServiceProvider'
     ],
 
     /*

@@ -80,4 +80,10 @@ return [
 
     'prefix' => 'gtis_mine',
 
+    /**
+     * Custom Config
+     */
+
+    'disable_caching'   =>  false,   // Disables the use of cache
+
 ];

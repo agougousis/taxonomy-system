@@ -44,7 +44,7 @@ class RootController extends Controller
      * @param string $message
      * @param string $category
      */
-    protected function log_event($message, $category)
+    protected function logEvent($message, $category)
     {
         if (Auth::check()) {
             $user_id = Auth::user()->email;
@@ -56,14 +56,14 @@ class RootController extends Controller
         $controller = class_basename($action['controller']);
         list($controller, $action) = explode('@', $controller);
 
-	$log = new SystemLog();
-	$log->when 	=   date("Y-m-d H:i:s");
-	$log->controller =  $controller;
-	$log->method 	=   $action;
-	$log->message 	=   $message;
-        $log->category  =   $category;
-        $log->actor     =   $user_id;
-	$log->save();
+        $log = new SystemLog();
+        $log->when = date("Y-m-d H:i:s");
+        $log->controller = $controller;
+        $log->method = $action;
+        $log->message = $message;
+        $log->category = $category;
+        $log->actor = $user_id;
+        $log->save();
     }
 
     /**
@@ -72,7 +72,7 @@ class RootController extends Controller
      * @param array $node
      * @return array
      */
-    protected function add_node($node)
+    protected function addNode($node)
     {
         unset($node['children']); // In case of batch execution
 
@@ -115,7 +115,7 @@ class RootController extends Controller
         // and its ancestors' leaves increase by one
         if ($parent->leaves_num > 0) {
             $ancestors = $child->getAncestors();
-            foreach($ancestors as $ancestor){
+            foreach ($ancestors as $ancestor) {
                 $ancestor->leaves_num++;
                 $ancestor->save();
             }
@@ -147,7 +147,7 @@ class RootController extends Controller
      * @param array $parent_node
      * @return array
      */
-    protected function validate_node_rank($node, $parent_node = null)
+    protected function validateNodeRank($node, $parent_node = null)
     {
         $valid = true;
         $error_field = "";
@@ -192,7 +192,7 @@ class RootController extends Controller
         $treeNode->label = $node->sname." (".$node->countLeaves().")";
 
         $count_children = $node->getChildren()->count();
-        if($count_children){
+        if ($count_children) {
             $treeNode->load_on_demand = true;
             $treeNode->leaves = $count_children;
         } else {
@@ -201,7 +201,7 @@ class RootController extends Controller
 
         // This property will be asked in case we are transforming both
         // accepted and non-accepted nodes
-        if($withAccepted){
+        if ($withAccepted) {
             $treeNode->accepted = $node->accepted;
         }
 
@@ -221,5 +221,4 @@ class RootController extends Controller
     {
         return $this->transformToTreeNode($node, true);
     }
-
 }

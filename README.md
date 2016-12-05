@@ -20,6 +20,12 @@ Javascript/CSS
 * jsTree - Tree widget for jQuery (https://github.com/mbraak/jqTree)
 * Bootstrap CSS Framework (http://getbootstrap.com/)
 
+## Caching
+
+The application is configured to use memcached but you can change that through
+/config/cache.php . You can also completely disable the caching by changing the
+'disable_caching' parameter to true. 
+
 ## Taxonomic rules enforced by the system
 
 | New name belongs to        | Its parent can be  |

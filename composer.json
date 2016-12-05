@@ -9,14 +9,15 @@
         "laravel/framework": "5.2.*",        
         "maatwebsite/excel": "~2.1.0",
         "laravelcollective/html": "5.2.*",
-        "guzzle/guzzle": "~3.9"
+        "guzzle/guzzle": "~3.9"        
     },  
     "require-dev": {
         "fzaninotto/faker": "~1.4",
         "mockery/mockery": "0.9.*",
         "phpunit/phpunit": "~4.0",
         "symfony/css-selector": "2.8.*|3.0.*",
-        "symfony/dom-crawler": "2.8.*|3.0.*"
+        "symfony/dom-crawler": "2.8.*|3.0.*",
+        "socialengine/sniffer-rules": "^2.2"
     },
     "autoload": {
         "classmap": [

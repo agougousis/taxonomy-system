@@ -23,7 +23,7 @@ class AdminController extends RootController
      *
      * @return Response
      */
-    public function clear_cache()
+    public function clearCache()
     {
         Cache::flush();
         return response()->json(['message' => 'Cache was cleared!'])->setStatusCode(200, 'Cache was cleared!');
@@ -82,7 +82,7 @@ class AdminController extends RootController
 
 
         // Try to store each node
-        $result = $this->add_node($node);
+        $result = $this->addNode($node);
 
         if (!$result['succeed']) {
             DB::rollBack();
@@ -105,7 +105,8 @@ class AdminController extends RootController
      * @param int $index
      * @return array
      */
-    private function getValidationErrorsAsIndexedArray($validator, $index){
+    private function getValidationErrorsAsIndexedArray($validator, $index)
+    {
         $validationErrors = [];
 
         foreach ($validator->errors()->getMessages() as $key => $errorMessages) {
@@ -167,9 +168,15 @@ class AdminController extends RootController
 
             $record = Sname::find($node['id']);
 
-            if (isset($node['id']))        {  unset($node['id']);         }
-            if (isset($node['parent_id'])) {  unset($node['parent_id']);  }
-            if (isset($node['rank']))      {  unset($node['rank']);       }
+            if (isset($node['id'])) {
+                unset($node['id']);
+            }
+            if (isset($node['parent_id'])) {
+                unset($node['parent_id']);
+            }
+            if (isset($node['rank'])) {
+                unset($node['rank']);
+            }
 
             // Try to store each node
             $record->fill($node);
@@ -261,7 +268,7 @@ class AdminController extends RootController
         $node = [];
         $node['parent_id'] = $new_parent['id'];
         $node['rank'] = $nodeObj->rank;
-        $position_status = $this->validate_node_rank($node, $new_parent);
+        $position_status = $this->validateNodeRank($node, $new_parent);
 
         if (!$position_status['valid']) {
             $errors = [];
@@ -286,7 +293,7 @@ class AdminController extends RootController
         $old_path = $nodeObj->path;
         $old_descendant_path = $old_path.'/'.$nodeObj->id;
         $new_descendant_path = $nodeObj->path.'/'.$nodeObj->id;
-        Sname::change_paths($old_descendant_path, $new_descendant_path);
+        Sname::changePaths($old_descendant_path, $new_descendant_path);
     }
 
     /**
@@ -378,7 +385,7 @@ class AdminController extends RootController
      *
      * @return View
      */
-    public function manage_page()
+    public function managePage()
     {
         $roots = Sname::getRoots(); // $roots is a Collection
         $treeRoots = $roots->map([$this, 'transformToTreeNode']);
@@ -387,7 +394,7 @@ class AdminController extends RootController
 
         $ranks = flatten(Rank::select('title')->orderBy('order')->get()->toArray());
         $rank_titles = array();
-        foreach($ranks as $rank){
+        foreach ($ranks as $rank) {
             $rank_titles[$rank] = $rank;
         }
 
@@ -406,7 +413,7 @@ class AdminController extends RootController
      * @param int $node_id
      * @return String/JSON
      */
-    public function node_seeding($node_id)
+    public function nodeSeeding($node_id)
     {
         // Check if a node with ID equal to $nid exists
         $root_node = Sname::find($node_id);
@@ -425,7 +432,7 @@ class AdminController extends RootController
             return response()->json(['message' => 'Number of seeds is not a positive integer!', 'errors' => array()])->setStatusCode(400, '');
         }
 
-        $result = $this->add_branch_children($how_many, $node_id);
+        $result = $this->addBranchChildren($how_many, $node_id);
         if ($result['status'] == 'failure') {
             return response()->json(['message' => $result['message'], 'errors' => array()])->setStatusCode(500, '');
         }
@@ -442,7 +449,7 @@ class AdminController extends RootController
      * @param int $how_many
      * @param int $root_node_id
      */
-    private function add_branch_children($how_many, $root_node_id)
+    private function addBranchChildren($how_many, $root_node_id)
     {
         // We need to clear the table in order to define a new scope of random string uniqueness.
         DB::table('uniquestrings')->truncate();
@@ -454,7 +461,6 @@ class AdminController extends RootController
 
         DB::beginTransaction();
         for ($i= 1; $i<=$how_many; $i++) {
-
             try {
                 $new_id = ++$this->max_id;
 
@@ -518,7 +524,7 @@ class AdminController extends RootController
         // Get information about the parent rank
         $parentRankInfo = Rank::where('title', $parent->rank)->first();
 
-        switch($nextRank->title){
+        switch ($nextRank->title) {
             case "Variety":
                 $childRank = "Variety";
                 break;
@@ -526,13 +532,13 @@ class AdminController extends RootController
                 $childRank = "Form";
                 break;
             default:
-                if($parentRankInfo->isMainRank == 1){
+                if ($parentRankInfo->isMainRank == 1) {
                     $nextMainRank = Rank::where('isMainRank', 1)->where('mainParent', $parent->rank)->first();
                 } else {
                     $nextMainRank = Rank::where('isMainRank', 1)->where('mainParent', $parentRankInfo->mainParent)->first();
                 }
 
-                if($nextRank->title == $nextMainRank->title){
+                if ($nextRank->title == $nextMainRank->title) {
                     $childRank = $nextRank->title;
                 } else {
                     $validRanks = [$nextRank->title,$nextMainRank->title];
@@ -567,7 +573,7 @@ class AdminController extends RootController
             } else {
                 $uniqueString = false;
             }
-        } while(!$uniqueString);
+        } while (!$uniqueString);
 
         $uq = new Uniquestring();
         $uq->name = $rString;

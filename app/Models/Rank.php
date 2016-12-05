@@ -7,27 +7,26 @@ use Illuminate\Database\Eloquent\Model;
 /**
 * Domain
 */
-class Rank extends Model {
+class Rank extends Model
+{
+    /**
+     * Table name.
+     *
+     * @var string
+     */
+    protected $table = 'ranks';
 
-  /**
-   * Table name.
-   *
-   * @var string
-   */
-  protected $table = 'ranks';
+    /**
+     * Table primary key
+     *
+     * @var string
+     */
+    public $primaryKey = "title";
 
-  /**
-   * Table primary key
-   *
-   * @var string
-   */
-  public $primaryKey = "title";
-
-  /**
-   * Don't treat primary key as auto-increment field
-   *
-   * @var boolean
-   */
-  public $incrementing = false;
-
+    /**
+     * Don't treat primary key as auto-increment field
+     *
+     * @var boolean
+     */
+    public $incrementing = false;
 }
